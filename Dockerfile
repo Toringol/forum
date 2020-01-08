@@ -1,8 +1,8 @@
 FROM ubuntu:18.04
 
 RUN apt-get -y update
-ENV USERNAME kexibq
-ENV PASSWORD kexibq
+ENV USERNAME user
+ENV PASSWORD pass
 
 #
 # Установка postgresql
@@ -44,7 +44,7 @@ USER root
 #CMD service postgresql start && ./goapp
 
 # Установка golang
-ENV GOVER 1.10
+ENV GOVER 1.13
 RUN apt-get install -y golang-$GOVER
 RUN apt-get install -y git
 
@@ -54,8 +54,8 @@ ENV GOPATH /opt/go
 ENV PATH $GOROOT/bin:$GOPATH/bin:/usr/local/go/bin:$PATH
 
 # Копируем исходный код в Docker-контейнер
-WORKDIR $GOPATH/src/github.com/malefaro/technopark-db-forum
-COPY . $GOPATH/src/github.com/malefaro/technopark-db-forum
+WORKDIR $GOPATH/src/github.com/Toringol/forum
+COPY . $GOPATH/src/github.com/Toringol/forum
 
 RUN go install .
 EXPOSE 5000

@@ -3,16 +3,17 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/lib/pq"
 	"io/ioutil"
 	"log"
 	"sync"
+
+	_ "github.com/lib/pq"
 )
 
 var db *sql.DB
 var once sync.Once
 
-func init(){
+func init() {
 	GetDataBase()
 }
 
