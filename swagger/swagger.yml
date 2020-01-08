@@ -1,0 +1,107 @@
+swagger: "2.0"
+info:
+  title: beego Test API
+  description: beego has a very cool tools to autogenerate documents for your API
+  version: 1.0.0
+  termsOfService: http://beego.me/
+  contact:
+    email: astaxie@gmail.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+basePath: /api
+paths:
+  /user/{nickname}/create:
+    post:
+      tags:
+      - user
+      description: create user
+      operationId: UserController.Post
+      parameters:
+      - in: path
+        name: nickname
+        description: nickname from uri
+        required: true
+        type: string
+      - in: body
+        name: profile
+        description: profile
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      responses:
+        "201":
+          description: ""
+          schema:
+            $ref: '#/definitions/models.User'
+        "403":
+          description: :uid is empty
+  /user/{nickname}/profile:
+    get:
+      tags:
+      - user
+      description: user information
+      operationId: UserController.Post
+      parameters:
+      - in: path
+        name: nickname
+        description: nickname from uri
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: '{object} models.Error'
+    post:
+      tags:
+      - user
+      description: user information
+      operationId: UserController.Post
+      parameters:
+      - in: path
+        name: nickname
+        description: nickname from uri
+        required: true
+        type: string
+      - in: body
+        name: profile
+        description: profile
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: '{object} models.Error'
+definitions:
+  models.Thread:
+    title: Thread
+    type: object
+    properties:
+      Id:
+        type: integer
+        format: int64
+      Name:
+        type: string
+  models.User:
+    title: User
+    type: object
+    properties:
+      about:
+        type: string
+      email:
+        type: string
+      fullname:
+        type: string
+      nickname:
+        type: string
+tags:
+- name: user
+  description: |
+    Operations about Users
