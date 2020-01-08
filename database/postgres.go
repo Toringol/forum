@@ -21,7 +21,7 @@ func GetDataBase() *sql.DB {
 
 	once.Do(func() {
 
-		dbinf := fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", "kexibq", "kexibq", "forumdb")
+		dbinf := fmt.Sprintf("user=%s password=%s dbname=%s host=127.0.0.1 port=5432 sslmode=disable", "toringol", "toringol", "forumdb")
 		var err error
 		db, err = sql.Open("postgres", dbinf)
 		if err != nil {

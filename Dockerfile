@@ -1,8 +1,8 @@
 FROM ubuntu:18.04
 
 RUN apt-get -y update
-ENV USERNAME user
-ENV PASSWORD pass
+ENV USERNAME toringol
+ENV PASSWORD toringol
 
 #
 # Установка postgresql
@@ -44,7 +44,7 @@ USER root
 #CMD service postgresql start && ./goapp
 
 # Установка golang
-ENV GOVER 1.13
+ENV GOVER 1.10
 RUN apt-get install -y golang-$GOVER
 RUN apt-get install -y git
 
@@ -62,7 +62,7 @@ EXPOSE 5000
 #RUN /etc/init.d/postgresql start &&\
 #    psql -U $USERNAME -d codeloft -a -f resources/initdb.sql &&\
 #    /etc/init.d/postgresql stop
-CMD service postgresql start && technopark-db-forum
+CMD service postgresql start && forum
 # sudo docker run -it -p 8000:8080 <IMAGEID> прокидываем на 8080, ибо сервер случает его
 
 
