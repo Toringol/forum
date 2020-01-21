@@ -154,7 +154,7 @@ DROP INDEX IF EXISTS postsThreadIdIdx;
 DROP INDEX IF EXISTS boostUsernameIdx;
 DROP INDEX IF EXISTS boostSlugIdx;
 DROP INDEX IF EXISTS ThreadsIDIdx;
-DROP INDEX IF EXISTS postsPathIdx
+DROP INDEX IF EXISTS postsPathIdx;
 
 CREATE INDEX IF NOT EXISTS threadsForumCreatedIdx ON Threads (forum, created);
 CREATE INDEX IF NOT EXISTS votesUsernameThreadIdx ON Votes (nickname, thread);

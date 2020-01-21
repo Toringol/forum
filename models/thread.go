@@ -165,7 +165,7 @@ func UpdateThread(db *sql.DB, thread *Thread) error {
 	if thread.Slug == "" {
 		_, err = db.Exec("update threads set title = $1, message = $2 where id = $3", thread.Title, thread.Message, thread.ID)
 	} else {
-		_, err = db.Exec("update threads set title = $1, message = $2 where slug) = $3", thread.Title, thread.Message, thread.Slug)
+		_, err = db.Exec("update threads set title = $1, message = $2 where slug = $3", thread.Title, thread.Message, thread.Slug)
 	}
 	if err != nil {
 		funcname := services.GetFunctionName()
