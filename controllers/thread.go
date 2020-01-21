@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Toringol/forum/database"
 	"github.com/Toringol/forum/models"
@@ -184,7 +185,8 @@ func contains(s []int, e int) bool {
 // @Success 200 {object} models.Thread
 // @router /:slug_or_id/create [post]
 func (t *ThreadController) CreatePosts() {
-	//currentTime := time.Now()
+	currentTime := time.Now().Truncate(time.Microsecond)
+	//currentTime := time.Now().Round(time.Microsecond)
 	//fmt.Println("_____________________________________________________________")
 	//fmt.Println("_____________________________________________________________")
 	//fmt.Printf("______________________________%v______________________________\n", currentTime)
@@ -198,7 +200,6 @@ func (t *ThreadController) CreatePosts() {
 	id, err := strconv.Atoi(slug_or_id)
 	thread := &models.Thread{}
 	if err == nil {
-		//thread.ID = id
 		thread, err = models.GetTreadByID(db, id)
 		if thread == nil {
 			t.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -207,7 +208,6 @@ func (t *ThreadController) CreatePosts() {
 			return
 		}
 	} else {
-		//thread.Slug = slug_or_id
 		thread, err = models.GetThreadBySlug(db, slug_or_id)
 		if thread == nil {
 			t.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -216,10 +216,6 @@ func (t *ThreadController) CreatePosts() {
 			return
 		}
 	}
-	//fmt.Println("thread.ID",thread.ID)
-	//maxId:= 0
-	//err = db.QueryRow(`SELECT MAX(id) FROM posts`).Scan(&maxId)
-	//maxId++
 	ids, err := models.GetPostsIDByThreadID(db, thread.ID)
 	//fmt.Println("len posts:",len(posts))
 	for _, post := range posts {
@@ -232,7 +228,7 @@ func (t *ThreadController) CreatePosts() {
 
 		post.Thread = thread.ID
 		post.Forum = thread.Forum
-		//post.Created = currentTime
+		post.Created = currentTime
 		//fmt.Println("post.Thread",post.Thread)
 		//fmt.Println("post.Forum",post.Forum)
 		user, err := models.GetUserByNickname(db, post.Author)
@@ -246,10 +242,6 @@ func (t *ThreadController) CreatePosts() {
 			t.ServeJSON()
 			return
 		}
-		//parentPathes, err := models.GetPathById(post.Parent)
-		//post.Path = append(post.Path, parentPathes...)
-		//post.Path = append(post.Path, maxId+i)
-		//fmt.Printf("post %d: %v\n", i,post)
 	}
 	//fmt.Println("____________________")
 	//fmt.Println("CHECK POSTS")
@@ -262,16 +254,22 @@ func (t *ThreadController) CreatePosts() {
 		//post.Created = currentTime
 		//db.QueryRow(`INSERT INTO posts (forum, thread, path) VALUES($1, $2, $3) RETURNING id`, post.Forum, post.Thread, pq.Array(post.Path)).Scan(&post.Id)
 	} else {
-		ids, times, err := models.CreatePosts(db, posts)
+		ids, err := models.CreatePosts(db, posts)
 		if err != nil {
 			funcname := services.GetFunctionName()
+			//log.Println("_____________________________________")
+			//log.Println("_____________________________________")
+			//log.Println("_____________________________________")
+			//log.Println(t.Ctx.Input.URI())
 			log.Printf("Function: %s, Error: %v", funcname, err)
-			log.Println("_____________________________________")
-
+			//log.Println(string(t.Ctx.Input.RequestBody))
+			//log.Println("_____________________________________")
+			//log.Println("_____________________________________")
+			//log.Println("_____________________________________")
 		}
-		for i, id := range ids {
-			posts[i].Created = times[i]
-			posts[i].Id = id
+		for i, ID := range ids {
+			//posts[i].Created = times[i]
+			posts[i].Id = ID
 		}
 	}
 	t.Ctx.Output.SetStatus(http.StatusCreated)
@@ -388,45 +386,44 @@ func (t *ThreadController) GetPosts() {
 		return
 	case sort == "parent_tree":
 		//lastIndex := 1
-		cmp := ""
+		//cmp := ""
 		//addlimit := ""
 		addSince := ""
 
-		args := make([]interface{}, 0, 4)
+		args := make([]interface{}, 0, 3)
 		args = append(args, thread.ID)
+		args = append(args, limit)
 		if desc == "false" || desc == "" {
 			desc = "ASC"
-			cmp = ">"
-
+			//cmp = ">"
 		} else {
 			desc = "DESC"
-			cmp = "<"
+			//cmp = "<"
 		}
-		if limit == "" {
-			limit = "ALL"
-		}
-		args = append(args, limit)
+
 		if since == "" {
-			addSince = ""
+			addSince = "WHERE p.rank <= $2 ORDER BY p.rank,p.path"
 		} else {
-			addSince = fmt.Sprintf("and p1.id %s (select path[1] from posts where id = $3 )", cmp)
+			addSince = `JOIN sub SubPosts ON SubPosts.id =$3 
+				WHERE p.rank <= $2 +SubPosts.rank 
+					AND (p.rank > SubPosts.rank OR p.rank=SubPosts.rank and p.path >SubPosts.path) 
+				ORDER BY p.rank, p.path`
 			args = append(args, since)
 		}
-		//args = append(args, since)
-		querystr := fmt.Sprintf(`WITH sub AS (
-    SELECT p1.id FROM posts as p1
-    WHERE p1.parent = 0 AND p1.thread = $1 %[2]s
-    ORDER BY id %[1]s
-    LIMIT $2
-    ) 
-    SELECT p.author,p.created, p.forum, p.id, p.isEdited, p.message, p.parent, p.thread , p.path
-    FROM posts p 
-    JOIN sub ON sub.id = p.path[1]
-    ORDER BY p.path[1] %[1]s, p.path[1:]`, desc, addSince)
+		querystr := fmt.Sprintf(`
+		WITH sub AS (
+    		SELECT p.author, p.created, t.forum, p.id,p.isEdited, p.message, p.parent, p.thread,p.path,
+			dense_rank() over (ORDER BY path [1] %[1]s) AS rank
+    		FROM posts p JOIN threads t on p.thread= t.id WHERE t.id= $1
+		)
+		SELECT p.author, p.created, p.forum, p.id, p.isEdited, p.message, p.parent, p.thread, p.path
+		FROM sub p %[2]s
+    	`, desc, addSince)
 		//fmt.Println("query str:", querystr)
 		//fmt.Println("query args:", args)
 		result, err := models.GetPosts(db, querystr, args)
 		if err != nil && err != sql.ErrNoRows {
+			log.Println("oops ErrNoRows?", err)
 			return
 		}
 		t.Ctx.Output.SetStatus(http.StatusOK)
@@ -434,38 +431,4 @@ func (t *ThreadController) GetPosts() {
 		t.ServeJSON()
 		return
 	}
-	//var req = `SELECT * FROM posts WHERE thread = ` + strconv.Itoa(thread.ID) + ` `
-	//if sort == "flat" ||  sort == "" {
-	//	if limit != "" {
-	//		if desc == "false" || desc == "" {
-	//			if since != "" {
-	//				req += `AND id >` + since + ` ORDER BY id ASC LIMIT ` + limit
-	//			} else {
-	//				req += `ORDER BY id LIMIT ` + limit
-	//			}
-	//		} else {
-	//			if since != "" {
-	//				req += `AND id <` + since + ` ORDER BY id DESC LIMIT ` + limit
-	//			} else {
-	//				req += `ORDER BY id DESC LIMIT ` + limit
-	//			}
-	//		}
-	//	} else {
-	//		if desc == "false" || desc == "" {
-	//			if since != "" {
-	//				req += `AND id >` + since + ` ORDER BY id ASC`
-	//			} else {
-	//				req += `ORDER BY id`
-	//			}
-	//		} else {
-	//			if since != "" {
-	//				req += `AND id <` + since + ` ORDER BY id DESC`
-	//			} else {
-	//				req += `ORDER BY id DESC`
-	//			}
-	//		}
-	//	}
-	////	fmt.Println(req)
-	//	return
-	//}
 }

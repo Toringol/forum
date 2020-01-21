@@ -14,7 +14,7 @@ import (
 	"github.com/lib/pq"
 )
 
-// Operations about Users
+/// Operations about Users
 type ForumController struct {
 	beego.Controller
 }
@@ -225,8 +225,8 @@ func (f *ForumController) Users() {
 	//ORDER BY nickname %[2]s %[3]s`,addSince,desc, addLimit)
 	queryrow := fmt.Sprintf(`SELECT u.about, u.email, u.fullname,u.nickname
 			FROM boost b
-			JOIN users u ON lower(b.username) = lower(u.nickname)
-WHERE lower(b.slug) = lower($1) %[1]s ORDER BY nickname %[2]s %[3]s`, addSince, desc, addLimit)
+			JOIN users u ON b.username = u.nickname
+WHERE b.slug = $1 %[1]s ORDER BY nickname %[2]s %[3]s`, addSince, desc, addLimit)
 	//fmt.Println(queryrow)
 	//fmt.Println(args)
 	result, err = models.GetUsers(db, queryrow, args)

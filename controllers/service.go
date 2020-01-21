@@ -59,8 +59,9 @@ func (s *ServiceController) Status() {
 // @router /clear [post]
 func (s *ServiceController) Clear() {
 	db := database.GetDataBase()
-	_, err := db.Exec("truncate table users, forums, threads, posts, votes")
+	_, err := db.Exec("truncate table users, forums, threads, posts, votes, boost")
 	if err != nil {
+		log.Println("ERROR CLEARING:", err)
 		return
 	}
 	s.Ctx.Output.SetStatus(http.StatusOK)
