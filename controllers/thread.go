@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/Toringol/forum/database"
 	"github.com/Toringol/forum/models"
@@ -185,7 +184,12 @@ func contains(s []int, e int) bool {
 // @Success 200 {object} models.Thread
 // @router /:slug_or_id/create [post]
 func (t *ThreadController) CreatePosts() {
-	currentTime := time.Now()
+	//currentTime := time.Now()
+	//fmt.Println("_____________________________________________________________")
+	//fmt.Println("_____________________________________________________________")
+	//fmt.Printf("______________________________%v______________________________\n", currentTime)
+	//fmt.Println("_____________________________________________________________")
+	//fmt.Println("_____________________________________________________________")
 	db := database.GetDataBase()
 	body := t.Ctx.Input.RequestBody
 	slug_or_id := t.GetString(":slug_or_id")
@@ -228,7 +232,7 @@ func (t *ThreadController) CreatePosts() {
 
 		post.Thread = thread.ID
 		post.Forum = thread.Forum
-		post.Created = currentTime
+		//post.Created = currentTime
 		//fmt.Println("post.Thread",post.Thread)
 		//fmt.Println("post.Forum",post.Forum)
 		user, err := models.GetUserByNickname(db, post.Author)
@@ -258,7 +262,7 @@ func (t *ThreadController) CreatePosts() {
 		//post.Created = currentTime
 		//db.QueryRow(`INSERT INTO posts (forum, thread, path) VALUES($1, $2, $3) RETURNING id`, post.Forum, post.Thread, pq.Array(post.Path)).Scan(&post.Id)
 	} else {
-		ids, err := models.CreatePosts(db, posts)
+		ids, times, err := models.CreatePosts(db, posts)
 		if err != nil {
 			funcname := services.GetFunctionName()
 			log.Printf("Function: %s, Error: %v", funcname, err)
@@ -266,6 +270,7 @@ func (t *ThreadController) CreatePosts() {
 
 		}
 		for i, id := range ids {
+			posts[i].Created = times[i]
 			posts[i].Id = id
 		}
 	}
@@ -418,8 +423,8 @@ func (t *ThreadController) GetPosts() {
     FROM posts p 
     JOIN sub ON sub.id = p.path[1]
     ORDER BY p.path[1] %[1]s, p.path[1:]`, desc, addSince)
-		fmt.Println("query str:", querystr)
-		fmt.Println("query args:", args)
+		//fmt.Println("query str:", querystr)
+		//fmt.Println("query args:", args)
 		result, err := models.GetPosts(db, querystr, args)
 		if err != nil && err != sql.ErrNoRows {
 			return

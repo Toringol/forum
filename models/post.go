@@ -77,13 +77,14 @@ func GetPathById(id int) ([]int, error) {
 	return result, nil
 }
 
-func CreatePosts(db *sql.DB, posts []*Post) ([]int, error) {
+func CreatePosts(db *sql.DB, posts []*Post) ([]int, []time.Time, error) {
 	valueStrings := make([]string, 0, len(posts))
 	valueArgs := make([]interface{}, 0, len(posts)*7)
 	for i, post := range posts {
-		valueStrings = append(valueStrings, fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d)", i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7))
+		//valueStrings = append(valueStrings, fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d)",i*7+1,i*7+2,i*7+3,i*7+4,i*7+5,i*7+6,i*7+7))
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d)", i*6+1, i*6+2, i*6+3, i*6+4, i*6+5, i*6+6))
 		valueArgs = append(valueArgs, post.Author)
-		valueArgs = append(valueArgs, post.Created)
+		//valueArgs = append(valueArgs, post.Created)
 		valueArgs = append(valueArgs, post.Forum)
 		valueArgs = append(valueArgs, post.Message)
 		valueArgs = append(valueArgs, post.Parent)
@@ -100,35 +101,40 @@ func CreatePosts(db *sql.DB, posts []*Post) ([]int, error) {
 		//fmt.Println("___________________________________")
 	}
 
-	stmt := fmt.Sprintf("INSERT INTO posts (author,created,forum,message,parent,thread,path) VALUES %s returning id", strings.Join(valueStrings, ","))
+	stmt := fmt.Sprintf("INSERT INTO posts (author,forum,message,parent,thread,path) VALUES %s returning id, created", strings.Join(valueStrings, ","))
 	//fmt.Println("stmt:",stmt)
 	//fmt.Println("valueArgs", valueArgs)
 	rows, err := db.Query(stmt, valueArgs...)
 	if err != nil {
 		funcname := services.GetFunctionName()
 		log.Printf("Function: %s, Error: %v, while scaning", funcname, err)
-		return []int{}, err
+		return []int{}, []time.Time{}, err
 	}
 	defer rows.Close()
 	result := make([]int, 0)
+	timeresult := make([]time.Time, 0)
 	//fmt.Println("check after Query")
 	//fmt.Println(rows)
 	for rows.Next() {
 		id := 0
-		err = rows.Scan(&id)
+		var t time.Time
+		err = rows.Scan(&id, &t)
+		fmt.Println("__________________________________ID")
+		fmt.Println(id)
 		//fmt.Println("check after scan")
 		if err != nil {
 			funcname := services.GetFunctionName()
 			log.Printf("Function: %s, Error: %v, while scaning", funcname, err)
-			return []int{}, err
+			return []int{}, []time.Time{}, err
 		}
 		result = append(result, id)
+		timeresult = append(timeresult, t)
 	}
 	//fmt.Println("RESULT IDS CREATEPOSTS",result)
 	if err != nil {
-		return []int{}, err
+		return []int{}, []time.Time{}, err
 	}
-	return result, nil
+	return result, timeresult, nil
 }
 
 func GetPosts(db *sql.DB, querystr string, args []interface{}) ([]*Post, error) {
@@ -161,9 +167,9 @@ func GetPosts(db *sql.DB, querystr string, args []interface{}) ([]*Post, error) 
 
 func GetPostDetailsByID(db *sql.DB, id string) (*PostDetails, error) {
 	//rows, err := db.Query(`SELECT * FROM posts WHERE id = $1`, id)
-	rows, err := db.Query(`select * from posts as p join users as u on u.nickname = p.author
-join forums as f on p.forum = f.slug
-join threads thread on f.slug = thread.forum
+	rows, err := db.Query(`select * from posts as p join users as u on lower(u.nickname) = lower(p.author)
+join forums as f on lower(p.forum) = lower(f.slug)
+join threads thread on lower(f.slug) = lower(thread.forum)
 where p.id = $1`, id)
 	defer rows.Close()
 	if err != nil {
@@ -177,18 +183,31 @@ where p.id = $1`, id)
 	thread := &Thread{}
 	pathstring := ""
 	if rows.Next() == true {
+		var slug sql.NullString
 		err := rows.Scan(&post.Author, &post.Created, &post.Forum, &post.Id, &post.IsEdited, &post.Message, &post.Parent, &post.Thread, &pathstring,
 			&user.About, &user.Email, &user.Fullname, &user.Nickname,
 			&forum.Posts, &forum.Slug, &forum.Threads, &forum.Title, &forum.Author,
-			&thread.Author, &thread.Created, &thread.Forum, &thread.ID, &thread.Message, &thread.Slug, &thread.Title, &thread.Votes)
+			&thread.Author, &thread.Created, &thread.Forum, &thread.ID, &thread.Message, &slug, &thread.Title, &thread.Votes)
+		if slug.String != "" {
+			thread.Slug = slug.String
+		}
 		if err != nil {
-			log.Println("Error in scanForum:", err)
+			funcname := services.GetFunctionName()
+			log.Printf("[SCAN] Function: %s, Error: %v", funcname, err)
 			return nil, err
 		}
 		for rows.Next() {
-			err := rows.Scan(&post.Author, &post.Created, &post.Forum, &post.Id, &post.IsEdited, &post.Message, &post.Parent, &post.Thread, &pathstring)
+			var slug sql.NullString
+			err := rows.Scan(&post.Author, &post.Created, &post.Forum, &post.Id, &post.IsEdited, &post.Message, &post.Parent, &post.Thread, &pathstring,
+				&user.About, &user.Email, &user.Fullname, &user.Nickname,
+				&forum.Posts, &forum.Slug, &forum.Threads, &forum.Title, &forum.Author,
+				&thread.Author, &thread.Created, &thread.Forum, &thread.ID, &thread.Message, &slug, &thread.Title, &thread.Votes)
+			if slug.String != "" {
+				thread.Slug = slug.String
+			}
 			if err != nil {
-				log.Println("Error in scanForum:", err)
+				funcname := services.GetFunctionName()
+				log.Printf("[SCAN] Function: %s, Error: %v", funcname, err)
 				return nil, err
 			}
 

@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/Toringol/forum/services"
@@ -17,15 +18,27 @@ type Forum struct {
 
 func (f *Forum) scanForum(rows *sql.Rows) error {
 	if rows.Next() == true {
+		//var slug sql.NullString
+		//err := rows.Scan(&f.Posts, slug, &f.Threads, &f.Title, &f.Author)
+		//if slug.String != "" {
+		//	f.Slug = slug.String
+		//}
 		err := rows.Scan(&f.Posts, &f.Slug, &f.Threads, &f.Title, &f.Author)
 		if err != nil {
 			log.Println("Error in scanForum:", err)
+			log.Println(f)
 			return err
 		}
 		for rows.Next() {
+			//var slug sql.NullString
+			//err := rows.Scan(&f.Posts, slug, &f.Threads, &f.Title, &f.Author)
+			//if slug.String != "" {
+			//	f.Slug = slug.String
+			//}
 			err := rows.Scan(&f.Posts, &f.Slug, &f.Threads, &f.Title, &f.Author)
 			if err != nil {
 				log.Println("Error in scanForum:", err)
+				log.Println(f)
 				return err
 			}
 		}
@@ -46,7 +59,7 @@ func CreateForum(db *sql.DB, forum *Forum) error {
 }
 
 func GetForumBySlug(db *sql.DB, slug string) (*Forum, error) {
-	rows, err := db.Query("select * from forums where slug = $1", slug)
+	rows, err := db.Query("select * from forums where lower(slug) = lower($1)", slug)
 	defer rows.Close()
 	if err != nil {
 		funcname := services.GetFunctionName()
@@ -57,6 +70,7 @@ func GetForumBySlug(db *sql.DB, slug string) (*Forum, error) {
 	err = forum.scanForum(rows)
 	switch err {
 	case sql.ErrNoRows:
+		fmt.Println("GetFourmBySlag ErrNoRows")
 		return nil, nil
 	case nil:
 		return forum, nil

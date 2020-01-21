@@ -22,13 +22,21 @@ type Thread struct {
 
 func (t *Thread) scanThread(rows *sql.Rows) error {
 	if rows.Next() == true {
-		err := rows.Scan(&t.Author, &t.Created, &t.Forum, &t.ID, &t.Message, &t.Slug, &t.Title, &t.Votes)
+		var slug sql.NullString
+		err := rows.Scan(&t.Author, &t.Created, &t.Forum, &t.ID, &t.Message, &slug, &t.Title, &t.Votes)
+		if slug.String != "" {
+			t.Slug = slug.String
+		}
 		if err != nil {
 			log.Println("Error in scanThread:", err)
 			return err
 		}
 		for rows.Next() {
-			err := rows.Scan(&t.Author, &t.Created, &t.Forum, &t.ID, &t.Message, &t.Slug, &t.Title, &t.Votes)
+			var slug sql.NullString
+			err := rows.Scan(&t.Author, &t.Created, &t.Forum, &t.ID, &t.Message, slug, &t.Title, &t.Votes)
+			if slug.String != "" {
+				t.Slug = slug.String
+			}
 			if err != nil {
 				log.Println("Error in scanThread:", err)
 				return err
@@ -41,7 +49,11 @@ func (t *Thread) scanThread(rows *sql.Rows) error {
 }
 
 func (t *Thread) scanThreads(rows *sql.Rows) error {
-	err := rows.Scan(&t.Author, &t.Created, &t.Forum, &t.ID, &t.Message, &t.Slug, &t.Title, &t.Votes)
+	var slug sql.NullString
+	err := rows.Scan(&t.Author, &t.Created, &t.Forum, &t.ID, &t.Message, &slug, &t.Title, &t.Votes)
+	if slug.String != "" {
+		t.Slug = slug.String
+	}
 	if err != nil {
 		log.Println("Error in scanThreads:", err)
 		return err
@@ -71,7 +83,7 @@ func CreateThread(db *sql.DB, thread *Thread) error {
 }
 
 func GetThreadBySlug(db *sql.DB, slug string) (*Thread, error) {
-	rows, err := db.Query("select * from threads where slug = $1", slug)
+	rows, err := db.Query("select * from threads where lower(slug) = lower($1)", slug)
 	defer rows.Close()
 	if err != nil {
 		funcname := services.GetFunctionName()
@@ -108,16 +120,16 @@ func GetThreadsByForum(db *sql.DB, forumslug, limit, since, desc string) ([]*Thr
 	switch {
 
 	case since != "" && limit != "":
-		queryrow = fmt.Sprintf("select * from threads where forum = $1 and created %s $2 order by created %s limit $3", cmp, desc)
+		queryrow = fmt.Sprintf("select * from threads where lower(forum) = lower($1) and created %s $2 order by created %s limit $3", cmp, desc)
 		rows, err = db.Query(queryrow, forumslug, since, limit)
 	case since == "" && limit == "":
-		queryrow = fmt.Sprintf("select * from threads where forum = $1 order by created %s", desc)
+		queryrow = fmt.Sprintf("select * from threads where lower(forum) = lower($1) order by created %s", desc)
 		rows, err = db.Query(queryrow, forumslug)
 	case since == "" && limit != "":
-		queryrow = fmt.Sprintf("select * from threads where forum = $1 order by created %s limit $2", desc)
+		queryrow = fmt.Sprintf("select * from threads where lower(forum) = lower($1) order by created %s limit $2", desc)
 		rows, err = db.Query(queryrow, forumslug, limit)
 	case since != "" && limit == "":
-		queryrow = fmt.Sprintf("select * from threads where forum = $1 and created %s $2 order by created %s", cmp, desc)
+		queryrow = fmt.Sprintf("select * from threads where lower(forum) = lower($1) and created %s $2 order by created %s", cmp, desc)
 		rows, err = db.Query(queryrow, forumslug, since)
 	}
 	defer rows.Close()
@@ -153,7 +165,7 @@ func UpdateThread(db *sql.DB, thread *Thread) error {
 	if thread.Slug == "" {
 		_, err = db.Exec("update threads set title = $1, message = $2 where id = $3", thread.Title, thread.Message, thread.ID)
 	} else {
-		_, err = db.Exec("update threads set title = $1, message = $2 where slug = $3", thread.Title, thread.Message, thread.Slug)
+		_, err = db.Exec("update threads set title = $1, message = $2 where lower(slug) = lower($3)", thread.Title, thread.Message, thread.Slug)
 	}
 	if err != nil {
 		funcname := services.GetFunctionName()
