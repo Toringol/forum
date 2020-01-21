@@ -35,14 +35,6 @@ USER root
 # Add VOLUMEs to allow backup of config, logs and databases
 #VOLUME ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
-##FROM alpine
-#WORKDIR /app
-#COPY --from=builder /go/src/github.com/go-park-mail-ru/2018_2_codeloft/goapp /app/
-##COPY .env .
-##RUN source ./.env
-#EXPOSE 80
-#CMD service postgresql start && ./goapp
-
 # Установка golang
 ENV GOVER 1.10
 RUN apt-get install -y golang-$GOVER
@@ -65,14 +57,4 @@ EXPOSE 5000
 CMD service postgresql start && forum
 # sudo docker run -it -p 8000:8080 <IMAGEID> прокидываем на 8080, ибо сервер случает его
 
-
-#CMD ["2018_2_codeloft"]
-
-#FROM scratch
-#COPY --from=builder /app ./
-#EXPOSE 8080
-#ENTRYPOINT ["./app"]
-
-
-#CMD ["2018_2_codeloft"]
 
