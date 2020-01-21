@@ -84,6 +84,8 @@ func (u *UserController) ProfilePost() {
 	db := database.GetDataBase()
 	nickname := u.GetString(":nickname")
 	body := u.Ctx.Input.RequestBody
+	//updateinfo := &models.User{Nickname: nickname}
+	//json.Unmarshal(body, updateinfo)
 	user, err := models.GetUserByNickname(db, nickname)
 	if user == nil {
 		u.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -94,6 +96,7 @@ func (u *UserController) ProfilePost() {
 	oldmail := user.Email
 
 	json.Unmarshal(body, user)
+	//fmt.Println(oldmail, user.Email)
 	if err != nil {
 		log.Printf("PATH: %v, error: %v", u.Ctx.Input.URI(), err)
 		return

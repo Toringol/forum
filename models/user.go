@@ -58,6 +58,7 @@ func GetUserByEmail(db *sql.DB, email string) (*User, error) {
 	case sql.ErrNoRows:
 		return nil, nil
 	case nil:
+		//fmt.Println("qwerty", user.Nickname, user.Email)
 		return user, nil
 	default:
 		funcname := services.GetFunctionName()
@@ -88,7 +89,7 @@ func GetUserWithEmailOrNickname(db *sql.DB, email, nickname string) ([]*User, er
 }
 
 func UpdateUserByNickname(db *sql.DB, nickname string, user User) error {
-	_, err := db.Exec("update users set about = $1, email = $2, fullname = $3 where nickname =$4", user.About, user.Email, user.Fullname, nickname)
+	_, err := db.Exec("update users set about = $1, email = $2, fullname = $3 where lower(nickname) =lower($4)", user.About, user.Email, user.Fullname, nickname)
 	if err != nil {
 		return err
 	}
