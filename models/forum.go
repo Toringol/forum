@@ -59,7 +59,7 @@ func CreateForum(db *sql.DB, forum *Forum) error {
 }
 
 func GetForumBySlug(db *sql.DB, slug string) (*Forum, error) {
-	rows, err := db.Query("select * from forums where lower(slug) = lower($1)", slug)
+	rows, err := db.Query("select * from forums where slug = $1", slug)
 	defer rows.Close()
 	if err != nil {
 		funcname := services.GetFunctionName()

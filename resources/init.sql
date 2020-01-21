@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS Users (
   about    TEXT,
   email    CITEXT COLLATE "ucs_basic" NOT NULL UNIQUE,
   fullname VARCHAR,
-  nickname CITEXT COLLATE "ucs_basic" NOT NULL UNIQUE
+  nickname CITEXT COLLATE "ucs_basic" primary key
 );
 
 CREATE TABLE IF NOT EXISTS forums (
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS threads(
 	votes BIGINT DEFAULT 0
 );
 
-CREATE OR REPLACE FUNCTION thread_inc() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION ThreadInc() RETURNS trigger AS $$
 BEGIN
   UPDATE forums SET threads = threads + 1
   WHERE slug = NEW.forum;
@@ -41,10 +41,14 @@ BEGIN
 END;
 $$ language plpgsql;
 
-DROP TRIGGER IF EXISTS thread_inc ON Threads;
+DROP TRIGGER IF EXISTS ThreadInc ON Threads;
 
-CREATE TRIGGER thread_inc AFTER INSERT ON Threads
-  FOR EACH ROW EXECUTE PROCEDURE thread_inc();
+CREATE TRIGGER ThreadInc AFTER INSERT ON Threads
+  FOR EACH ROW EXECUTE PROCEDURE ThreadInc();
+
+
+
+
 
 
 CREATE TABLE IF NOT EXISTS votes (
@@ -54,7 +58,7 @@ CREATE TABLE IF NOT EXISTS votes (
   UNIQUE(nickname, thread)
 );
 
-CREATE OR REPLACE FUNCTION votes_inc() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION VotesInc() RETURNS trigger AS $$
 BEGIN
   UPDATE threads SET votes = votes + NEW.voice
   WHERE id = NEW.thread;
@@ -62,14 +66,12 @@ BEGIN
 END;
 $$ language plpgsql;
 
-DROP TRIGGER IF EXISTS votes_inc ON votes;
+DROP TRIGGER IF EXISTS VotesInc ON votes;
 
-CREATE TRIGGER votes_inc AFTER INSERT ON votes
-  FOR EACH ROW EXECUTE PROCEDURE votes_inc();
+CREATE TRIGGER VotesInc AFTER INSERT ON votes
+  FOR EACH ROW EXECUTE PROCEDURE VotesInc();
 
-
-
-CREATE OR REPLACE FUNCTION votes_inc_on_update() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION VotesIncOnUpdate() RETURNS trigger AS $$
 BEGIN
   UPDATE threads SET votes = votes + 2*NEW.voice
   WHERE id = NEW.thread;
@@ -77,10 +79,14 @@ BEGIN
 END;
 $$ language plpgsql;
 
-DROP TRIGGER IF EXISTS votes_inc_on_update ON votes;
+DROP TRIGGER IF EXISTS VotesIncOnUpdate ON votes;
 
-CREATE TRIGGER votes_inc_on_update AFTER UPDATE ON votes
-  FOR EACH ROW EXECUTE PROCEDURE votes_inc_on_update();
+CREATE TRIGGER VotesIncOnUpdate AFTER UPDATE ON votes
+  FOR EACH ROW EXECUTE PROCEDURE VotesIncOnUpdate();
+
+
+
+
 
 
 CREATE TABLE IF NOT EXISTS posts (
@@ -96,7 +102,7 @@ CREATE TABLE IF NOT EXISTS posts (
 );
 
 
-CREATE OR REPLACE FUNCTION post_inc() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION postInc() RETURNS trigger AS $$
 BEGIN
   UPDATE forums SET posts = posts + 1
   WHERE slug = NEW.forum;
@@ -104,25 +110,25 @@ BEGIN
 END;
 $$ language plpgsql;
 
-DROP TRIGGER IF EXISTS post_inc ON posts;
+DROP TRIGGER IF EXISTS postInc ON posts;
 
-CREATE TRIGGER post_inc AFTER insert ON posts
-  FOR EACH ROW EXECUTE PROCEDURE post_inc();
+CREATE TRIGGER postInc AFTER insert ON posts
+  FOR EACH ROW EXECUTE PROCEDURE postInc();
 
-CREATE OR REPLACE FUNCTION add_path() RETURNS trigger
-LANGUAGE plpgsql
+CREATE OR REPLACE FUNCTION addPath() RETURNS trigger
 AS $$BEGIN
   NEW.path=array_append((SELECT path FROM posts WHERE id = NEW.parent), NEW.id);
   RETURN NEW;
-END$$;
+END;
+$$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS add_path_after_insert_post ON posts;
+DROP TRIGGER IF EXISTS addPathAfterInsertPost ON posts;
 
-CREATE TRIGGER add_path_after_insert_post
+CREATE TRIGGER addPathAfterInsertPost
   BEFORE INSERT
   ON Posts
   FOR EACH ROW
-EXECUTE PROCEDURE add_path();
+EXECUTE PROCEDURE addPath();
 
 
 
@@ -145,24 +151,16 @@ DROP INDEX IF EXISTS postsPath1ThreadIdx;
 DROP INDEX IF EXISTS postsThreadIdIdx;
 
 
+DROP INDEX IF EXISTS boostUsernameIdx;
+DROP INDEX IF EXISTS boostSlugIdx;
+DROP INDEX IF EXISTS ThreadsIDIdx;
+DROP INDEX IF EXISTS postsPathIdx
 
-CREATE UNIQUE INDEX IF NOT EXISTS usersLowerNicknameIdx ON Users (LOWER(nickname));
-CREATE UNIQUE INDEX IF NOT EXISTS usersLowerEmailIdx ON Users (LOWER(email));
-CREATE INDEX IF NOT EXISTS forumsNicknameIdx ON Forums (LOWER(author));
-CREATE UNIQUE INDEX IF NOT EXISTS forumsSlugIdx ON Forums (LOWER(slug));
-CREATE INDEX IF NOT EXISTS threadsSlugIdx ON Threads (LOWER(slug));
-CREATE INDEX IF NOT EXISTS threadsAuthorIdx on Threads (LOWER(author));
-CREATE INDEX IF NOT EXISTS threadsForumIdx on Threads (LOWER(forum));
-CREATE INDEX IF NOT EXISTS threadsForumCreatedIdx ON Threads (LOWER(forum), created);
+CREATE INDEX IF NOT EXISTS threadsForumCreatedIdx ON Threads (forum, created);
 CREATE INDEX IF NOT EXISTS votesUsernameThreadIdx ON Votes (nickname, thread);
-CREATE INDEX IF NOT EXISTS postsIdIdx ON Posts (id);
-CREATE INDEX IF NOT EXISTS postsAuthorIdx ON Posts (lower(author));
-CREATE INDEX IF NOT EXISTS postsThreadIdx ON Posts (thread);
-CREATE INDEX IF NOT EXISTS postsCreatedIdx ON Posts (created);
-CREATE INDEX IF NOT EXISTS postsForumIdx ON Posts (lower(forum));
-CREATE INDEX IF NOT EXISTS postsPath1Idx ON Posts ((path [1]));
-CREATE INDEX IF NOT EXISTS postsPath1ThreadIdx ON Posts (thread, (path [1]));
-CREATE INDEX IF NOT EXISTS postsThreadIdIdx ON Posts(thread, id);
+
+CREATE INDEX IF NOT EXISTS postsThreadIdIdx ON Posts(thread, id, created);
+CREATE INDEX IF NOT EXISTS postsPathIdx ON Posts(id,(path[1]));
 
 
 CREATE TABLE IF NOT EXISTS Boost (
@@ -175,30 +173,24 @@ CREATE TABLE IF NOT EXISTS Boost (
 
 CREATE OR REPLACE FUNCTION addUserToBoost()
   RETURNS TRIGGER
-LANGUAGE plpgsql
 AS $$
 BEGIN
   INSERT INTO Boost (username, slug) VALUES (NEW.author, NEW.forum)
   ON CONFLICT DO NOTHING;
   RETURN NEW;
-END
-$$;
+END;
+$$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS addUserToBoost ON posts;
+DROP TRIGGER IF EXISTS AddUserToBoostAfterInsertOnThread ON Threads;
 
-CREATE TRIGGER add_user_after_insert_thread
-  AFTER INSERT
+CREATE TRIGGER AddUserToBoostAfterInsertOnThread AFTER INSERT
   ON Threads
-  FOR EACH ROW
-EXECUTE PROCEDURE addUserToBoost();
+  FOR EACH ROW EXECUTE PROCEDURE addUserToBoost();
 
-CREATE TRIGGER add_user_after_insert_thread
-  AFTER INSERT
-  ON Posts
-  FOR EACH ROW
-EXECUTE PROCEDURE addUserToBoost();
+DROP TRIGGER IF EXISTS AddUserToBoostAfterInsertOnThread ON Posts;
 
-CREATE INDEX IF NOT EXISTS boostUsernameIdx ON Boost (LOWER(username));
-CREATE INDEX IF NOT EXISTS boostSlugIdx ON Boost (LOWER(slug), LOWER(username));
-DROP INDEX IF EXISTS boostUsernameIdx;
-DROP INDEX IF EXISTS boostSlugIdx;
+CREATE TRIGGER AddUserToBoostAfterInsertOnPosts AFTER INSERT ON Posts
+  FOR EACH ROW EXECUTE PROCEDURE addUserToBoost();
+
+CREATE INDEX IF NOT EXISTS boostUsernameIdx ON Boost (username);
+CREATE INDEX IF NOT EXISTS boostSlugIdx ON Boost (slug, username);

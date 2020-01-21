@@ -26,7 +26,7 @@ func CreateVote(db *sql.DB, vote *Vote) error {
 
 func UpdateVote(db *sql.DB, vote *Vote) (int, error) {
 	var voice int = 0
-	rows := db.QueryRow("update votes set voice = $1 where lower(nickname) = lower($2) and thread = $3 and voice <> $1 returning voice", vote.Voice, vote.Nickname, vote.Thread)
+	rows := db.QueryRow("update votes set voice = $1 where nickname = $2 and thread = $3 and voice <> $1 returning voice", vote.Voice, vote.Nickname, vote.Thread)
 	rows.Scan(&voice)
 	fmt.Println(voice)
 	return voice, nil
