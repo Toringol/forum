@@ -176,7 +176,6 @@ func (f *ForumController) Users() {
 	limit := f.Ctx.Input.Query("limit")
 	since := f.Ctx.Input.Query("since")
 	desc := f.Ctx.Input.Query("desc")
-	//fmt.Println("slug:",slug)
 	forum, err := models.GetForumBySlug(db, slug)
 	if err != nil {
 		funcname := services.GetFunctionName()
@@ -214,23 +213,11 @@ func (f *ForumController) Users() {
 		lastIndex++
 		args = append(args, limit)
 	}
-	//	if since != "" {
-	//		addSince = fmt.Sprintf("AND u.nickname %s $%d", cmp, lastIndex)
-	//		args = append(args, since)
-	//	}
-	//	queryrow := fmt.Sprintf(`
-	//SELECT DISTINCT u.* FROM users AS u JOIN posts AS p ON u.nickname = p.author WHERE p.forum = $1 %[1]s
-	//UNION
-	//SELECT DISTINCT u.* FROM users AS u JOIN threads AS t ON u.nickname = t.author WHERE t.forum = $1 %[1]s
-	//ORDER BY nickname %[2]s %[3]s`,addSince,desc, addLimit)
 	queryrow := fmt.Sprintf(`SELECT u.about, u.email, u.fullname,u.nickname
 			FROM boost b
 			JOIN users u ON b.username = u.nickname
 WHERE b.slug = $1 %[1]s ORDER BY nickname %[2]s %[3]s`, addSince, desc, addLimit)
-	//fmt.Println(queryrow)
-	//fmt.Println(args)
 	result, err = models.GetUsers(db, queryrow, args)
-	//fmt.Println(result)
 	if err != nil && err != sql.ErrNoRows {
 		funcname := services.GetFunctionName()
 		log.Printf("Function: %s, Error: %v", funcname, err)

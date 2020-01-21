@@ -55,6 +55,5 @@ EXPOSE 5000
 #    psql -U $USERNAME -d codeloft -a -f resources/initdb.sql &&\
 #    /etc/init.d/postgresql stop
 CMD service postgresql start && forum
-# sudo docker run -it -p 8000:8080 <IMAGEID> прокидываем на 8080, ибо сервер случает его
 
 

@@ -34,7 +34,6 @@ func (t *ThreadController) UpdateThread() {
 	json.Unmarshal(body, thread)
 	id, err := strconv.Atoi(slug_or_id)
 	if err == nil {
-		//thread.ID = id
 		oldthread, err = models.GetTreadByID(db, id)
 		if oldthread == nil {
 			t.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -44,7 +43,6 @@ func (t *ThreadController) UpdateThread() {
 		}
 
 	} else {
-		//thread.Slug = slug_or_id
 		oldthread, err = models.GetThreadBySlug(db, slug_or_id)
 		if oldthread == nil {
 			t.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -78,7 +76,6 @@ func (t *ThreadController) GetThread() {
 	thread := &models.Thread{}
 	id, err := strconv.Atoi(slug_or_id)
 	if err == nil {
-		//thread.ID = id
 		thread, err = models.GetTreadByID(db, id)
 		if thread == nil {
 			t.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -88,7 +85,6 @@ func (t *ThreadController) GetThread() {
 		}
 
 	} else {
-		//thread.Slug = slug_or_id
 		thread, err = models.GetThreadBySlug(db, slug_or_id)
 		if thread == nil {
 			t.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -115,7 +111,6 @@ func (t *ThreadController) CreateVote() {
 	thread := &models.Thread{}
 	id, err := strconv.Atoi(slug_or_id)
 	if err == nil {
-		//thread.ID = id
 		thread, err = models.GetTreadByID(db, id)
 		if thread == nil {
 			t.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -125,7 +120,6 @@ func (t *ThreadController) CreateVote() {
 		}
 
 	} else {
-		//thread.Slug = slug_or_id
 		thread, err = models.GetThreadBySlug(db, slug_or_id)
 		if thread == nil {
 			t.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -146,14 +140,8 @@ func (t *ThreadController) CreateVote() {
 		return
 	}
 	vote.Thread = thread.ID
-	//fmt.Println("___________________________________")
-	//fmt.Println(vote)
-	//fmt.Println("vote voice", vote.Voice)
-	//fmt.Println("___________________________________")
 	err = models.CreateVote(db, vote)
 	if pgerr, ok := err.(*pq.Error); ok {
-		//fmt.Printf("%v\n", pgerr)
-		//fmt.Printf("%#v\n", pgerr.Code)
 		if pgerr.Code == "23505" {
 			voice, _ := models.UpdateVote(db, vote)
 			if voice != 0 {
@@ -186,12 +174,6 @@ func contains(s []int, e int) bool {
 // @router /:slug_or_id/create [post]
 func (t *ThreadController) CreatePosts() {
 	currentTime := time.Now().Truncate(time.Microsecond)
-	//currentTime := time.Now().Round(time.Microsecond)
-	//fmt.Println("_____________________________________________________________")
-	//fmt.Println("_____________________________________________________________")
-	//fmt.Printf("______________________________%v______________________________\n", currentTime)
-	//fmt.Println("_____________________________________________________________")
-	//fmt.Println("_____________________________________________________________")
 	db := database.GetDataBase()
 	body := t.Ctx.Input.RequestBody
 	slug_or_id := t.GetString(":slug_or_id")
@@ -217,7 +199,6 @@ func (t *ThreadController) CreatePosts() {
 		}
 	}
 	ids, err := models.GetPostsIDByThreadID(db, thread.ID)
-	//fmt.Println("len posts:",len(posts))
 	for _, post := range posts {
 		if post.Parent != 0 && !contains(ids, post.Parent) {
 			t.Ctx.Output.SetStatus(http.StatusConflict)
@@ -229,8 +210,6 @@ func (t *ThreadController) CreatePosts() {
 		post.Thread = thread.ID
 		post.Forum = thread.Forum
 		post.Created = currentTime
-		//fmt.Println("post.Thread",post.Thread)
-		//fmt.Println("post.Forum",post.Forum)
 		user, err := models.GetUserByNickname(db, post.Author)
 		if err != nil {
 			log.Printf("PATH: %v, error: %v", t.Ctx.Input.URI(), err)
@@ -243,32 +222,14 @@ func (t *ThreadController) CreatePosts() {
 			return
 		}
 	}
-	//fmt.Println("____________________")
-	//fmt.Println("CHECK POSTS")
-	//fmt.Println(posts)
-	//fmt.Println("____________________")
 	if len(posts) == 0 {
-		//post := &models.Post{}
-		//post.Thread = thread.ID
-		//post.Forum = thread.Forum
-		//post.Created = currentTime
-		//db.QueryRow(`INSERT INTO posts (forum, thread, path) VALUES($1, $2, $3) RETURNING id`, post.Forum, post.Thread, pq.Array(post.Path)).Scan(&post.Id)
 	} else {
 		ids, err := models.CreatePosts(db, posts)
 		if err != nil {
 			funcname := services.GetFunctionName()
-			//log.Println("_____________________________________")
-			//log.Println("_____________________________________")
-			//log.Println("_____________________________________")
-			//log.Println(t.Ctx.Input.URI())
 			log.Printf("Function: %s, Error: %v", funcname, err)
-			//log.Println(string(t.Ctx.Input.RequestBody))
-			//log.Println("_____________________________________")
-			//log.Println("_____________________________________")
-			//log.Println("_____________________________________")
 		}
 		for i, ID := range ids {
-			//posts[i].Created = times[i]
 			posts[i].Id = ID
 		}
 	}
@@ -291,7 +252,6 @@ func (t *ThreadController) GetPosts() {
 	id, err := strconv.Atoi(slug_or_id)
 	thread := &models.Thread{}
 	if err == nil {
-		//thread.ID = id
 		thread, err = models.GetTreadByID(db, id)
 		if thread == nil {
 			t.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -300,7 +260,6 @@ func (t *ThreadController) GetPosts() {
 			return
 		}
 	} else {
-		//thread.Slug = slug_or_id
 		thread, err = models.GetThreadBySlug(db, slug_or_id)
 		if thread == nil {
 			t.Ctx.Output.SetStatus(http.StatusNotFound)
@@ -335,7 +294,6 @@ func (t *ThreadController) GetPosts() {
 			args = append(args, limit)
 		}
 		querystr := fmt.Sprintf("select * from posts where thread = $1 %[1]s ORDER BY id %[2]s %[3]s", addSince, desc, addlimit)
-		//fmt.Println("flat sort querystring :", querystr)
 		result, err := models.GetPosts(db, querystr, args)
 		if err != nil && err != sql.ErrNoRows {
 			return
@@ -374,8 +332,6 @@ func (t *ThreadController) GetPosts() {
 			args = append(args, limit)
 		}
 		querystr := fmt.Sprintf("select p1.* from posts as p1 %s ORDER BY path %s %s", addSince, desc, addlimit)
-		//fmt.Println("tree sort querystring :", querystr)
-		//fmt.Println("tree sort args", args)
 		result, err := models.GetPosts(db, querystr, args)
 		if err != nil && err != sql.ErrNoRows {
 			return
@@ -385,9 +341,6 @@ func (t *ThreadController) GetPosts() {
 		t.ServeJSON()
 		return
 	case sort == "parent_tree":
-		//lastIndex := 1
-		//cmp := ""
-		//addlimit := ""
 		addSince := ""
 
 		args := make([]interface{}, 0, 3)
@@ -395,10 +348,8 @@ func (t *ThreadController) GetPosts() {
 		args = append(args, limit)
 		if desc == "false" || desc == "" {
 			desc = "ASC"
-			//cmp = ">"
 		} else {
 			desc = "DESC"
-			//cmp = "<"
 		}
 
 		if since == "" {
@@ -419,8 +370,6 @@ func (t *ThreadController) GetPosts() {
 		SELECT p.author, p.created, p.forum, p.id, p.isEdited, p.message, p.parent, p.thread, p.path
 		FROM sub p %[2]s
     	`, desc, addSince)
-		//fmt.Println("query str:", querystr)
-		//fmt.Println("query args:", args)
 		result, err := models.GetPosts(db, querystr, args)
 		if err != nil && err != sql.ErrNoRows {
 			log.Println("oops ErrNoRows?", err)

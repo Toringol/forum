@@ -18,11 +18,6 @@ type Forum struct {
 
 func (f *Forum) scanForum(rows *sql.Rows) error {
 	if rows.Next() == true {
-		//var slug sql.NullString
-		//err := rows.Scan(&f.Posts, slug, &f.Threads, &f.Title, &f.Author)
-		//if slug.String != "" {
-		//	f.Slug = slug.String
-		//}
 		err := rows.Scan(&f.Posts, &f.Slug, &f.Threads, &f.Title, &f.Author)
 		if err != nil {
 			log.Println("Error in scanForum:", err)
@@ -30,11 +25,6 @@ func (f *Forum) scanForum(rows *sql.Rows) error {
 			return err
 		}
 		for rows.Next() {
-			//var slug sql.NullString
-			//err := rows.Scan(&f.Posts, slug, &f.Threads, &f.Title, &f.Author)
-			//if slug.String != "" {
-			//	f.Slug = slug.String
-			//}
 			err := rows.Scan(&f.Posts, &f.Slug, &f.Threads, &f.Title, &f.Author)
 			if err != nil {
 				log.Println("Error in scanForum:", err)
@@ -79,5 +69,4 @@ func GetForumBySlug(db *sql.DB, slug string) (*Forum, error) {
 		log.Printf("Function: %s, Error: %v", funcname, err)
 		return nil, err
 	}
-	//return forum, nil
 }
