@@ -41,6 +41,4 @@ func init() {
 		),
 	)
 	beego.AddNamespace(ns)
-	//beego.Router("/", &controllers.UserController{}, "get:GetAll")
-	//beego.Router("/q", &controllers.Test{}, "get:Test")
 }

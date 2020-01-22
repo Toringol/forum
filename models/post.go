@@ -82,7 +82,6 @@ func CreatePosts(db *sql.DB, posts []*Post) ([]int, error) {
 	valueArgs := make([]interface{}, 0, len(posts)*7)
 	for i, post := range posts {
 		valueStrings = append(valueStrings, fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d)", i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7))
-		//valueStrings = append(valueStrings, fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d)",i*6+1,i*6+2,i*6+3,i*6+4,i*6+5,i*6+6))
 		valueArgs = append(valueArgs, post.Author)
 		valueArgs = append(valueArgs, post.Created)
 		valueArgs = append(valueArgs, post.Forum)
@@ -90,56 +89,31 @@ func CreatePosts(db *sql.DB, posts []*Post) ([]int, error) {
 		valueArgs = append(valueArgs, post.Parent)
 		valueArgs = append(valueArgs, post.Thread)
 		valueArgs = append(valueArgs, pq.Array(post.Path))
-		//fmt.Println("___________________________________")
-		//fmt.Println("___________________________________")
-		//fmt.Println("___________________________________")
-		//fmt.Println("___________________________________")
-		//fmt.Printf("POST %v %v %v CREATED at %v\n", post.Author,post.Forum, post.Thread, post.Created)
-		//fmt.Println("___________________________________")
-		//fmt.Println("___________________________________")
-		//fmt.Println("___________________________________")
-		//fmt.Println("___________________________________")
 	}
 
 	stmt := fmt.Sprintf("INSERT INTO posts (author,created,forum,message,parent,thread,path) VALUES %s returning id", strings.Join(valueStrings, ","))
-	//fmt.Println("stmt:",stmt)
-	//fmt.Println("valueArgs", valueArgs)
 	rows, err := db.Query(stmt, valueArgs...)
 	if err != nil {
 		funcname := services.GetFunctionName()
 		log.Printf("Function: %s, Error: %v, while scaning", funcname, err)
 		return []int{}, err
-		//return []int{},[]time.Time{}, err
 	}
 	defer rows.Close()
 	result := make([]int, 0)
-	//timeresult := make([]time.Time,0)
-	//fmt.Println("check after Query")
-	//fmt.Println(rows)
 	for rows.Next() {
 		id := 0
-		//var t time.Time
-		//err = rows.Scan(&id, &t)
 		err = rows.Scan(&id)
-		//fmt.Println("__________________________________ID")
-		//fmt.Println(id)
-		//fmt.Println("check after scan")
 		if err != nil {
 			funcname := services.GetFunctionName()
 			log.Printf("Function: %s, Error: %v, while scaning", funcname, err)
 			return []int{}, err
-			//return []int{},[]time.Time{}, err
 		}
 		result = append(result, id)
-		//timeresult = append(timeresult, t)
 	}
-	//fmt.Println("RESULT IDS CREATEPOSTS",result)
 	if err != nil {
 		return []int{}, err
-		//return []int{},[]time.Time{}, err
 	}
 	return result, nil
-	//return result,timeresult,nil
 }
 
 func GetPosts(db *sql.DB, querystr string, args []interface{}) ([]*Post, error) {
@@ -171,7 +145,6 @@ func GetPosts(db *sql.DB, querystr string, args []interface{}) ([]*Post, error) 
 }
 
 func GetPostDetailsByID(db *sql.DB, id string) (*PostDetails, error) {
-	//rows, err := db.Query(`SELECT * FROM posts WHERE id = $1`, id)
 	rows, err := db.Query(`select * from posts as p join users as u on u.nickname = p.author
 join forums as f on p.forum = f.slug
 join threads thread on p.thread = thread.id

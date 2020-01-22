@@ -58,7 +58,6 @@ func GetUserByEmail(db *sql.DB, email string) (*User, error) {
 	case sql.ErrNoRows:
 		return nil, nil
 	case nil:
-		//fmt.Println("qwerty", user.Nickname, user.Email)
 		return user, nil
 	default:
 		funcname := services.GetFunctionName()

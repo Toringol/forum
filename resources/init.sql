@@ -193,4 +193,4 @@ CREATE TRIGGER AddUserToBoostAfterInsertOnPosts AFTER INSERT ON Posts
   FOR EACH ROW EXECUTE PROCEDURE addUserToBoost();
 
 CREATE INDEX IF NOT EXISTS boostUsernameIdx ON Boost (username);
-CREATE INDEX IF NOT EXISTS boostSlugIdx ON Boost (slug, username);
+CREATE INDEX IF NOT EXISTS boostSlugIdx ON Boost (username, slug);

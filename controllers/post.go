@@ -71,30 +71,6 @@ func (p *PostController) UpdatePosts() {
 	body := p.Ctx.Input.RequestBody
 	updatepost := &models.Post{}
 	json.Unmarshal(body, updatepost)
-	//tx, err := db.Begin()
-	//if err != nil {
-	//	log.Println(err)
-	//	return
-	//}
-	//defer tx.Commit()
-	//pathstring:=""
-	//post := &models.Post{}
-	//err = tx.QueryRow("select * from posts where id = $1", id).Scan(&post.Author,&post.Created,&post.Forum,&post.Id,&post.IsEdited,&post.Message,&post.Parent,&post.Thread,&pathstring)
-	//if err != nil {
-	//	p.Ctx.Output.SetStatus(http.StatusNotFound)
-	//	p.Data["json"] = &models.Error{"can't find post with id: "+ id}
-	//	p.ServeJSON()
-	//	return
-	//}
-	//if updatepost.Message != "" && post.Message != updatepost.Message {
-	//	post, err = models.UpdatePosts(db, post.Message, id)
-	//	if err != nil {
-	//		p.Ctx.Output.SetStatus(http.StatusNotFound)
-	//		p.Data["json"] = &models.Error{"can't find post with id: "+ id}
-	//		p.ServeJSON()
-	//		return
-	//	}
-	//}
 	post, err := models.UpdatePosts(db, updatepost.Message, id)
 	if post == nil {
 		p.Ctx.Output.SetStatus(http.StatusNotFound)
